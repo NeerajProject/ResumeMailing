@@ -1,3 +1,9 @@
 from django.contrib import admin
+from .models import MailingList, Contact, EmailTemplate, Mailing, MailingLog
 
-# Register your models here.
+admin.site.register(MailingList)
+admin.site.register(Contact)
+admin.site.register(EmailTemplate)
+admin.site.register(Mailing)
+admin.site.register(MailingLog)
+
