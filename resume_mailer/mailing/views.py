@@ -129,3 +129,7 @@ def mailing_kanban(request):
 def mailinglog_list(request):
     logs = MailingLog.objects.select_related('mailing', 'contact').all()
     return render(request, 'mailing/mailinglog_list.html', {'logs': logs})
+
+@login_required
+def dashboard(request):
+    return render(request, 'mailing/dashboard.html')

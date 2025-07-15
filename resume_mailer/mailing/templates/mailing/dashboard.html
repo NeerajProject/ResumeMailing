@@ -1,0 +1,63 @@
+{% extends 'mailing/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row row-cols-1 row-cols-md-2 g-4">
+
+    <div class="col">
+        <div class="card text-center shadow-sm border-0 h-100" style="cursor:pointer;" onclick="location.href='{% url 'mailing:mailing_create' %}'">
+            <div class="card-body">
+                <h1 class="mb-3">📤</h1>
+                <h5 class="card-title">Send Resume</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card text-center shadow-sm border-0 h-100" style="cursor:pointer;" onclick="location.href='{% url 'mailing:mailinglog_list' %}'">
+            <div class="card-body">
+                <h1 class="mb-3">📋</h1>
+                <h5 class="card-title">View Logs</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card text-center shadow-sm border-0 h-100" style="cursor:pointer;" onclick="location.href='{% url 'mailing:contact_list' %}'">
+            <div class="card-body">
+                <h1 class="mb-3">👥</h1>
+                <h5 class="card-title">Manage Contacts</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card text-center shadow-sm border-0 h-100" style="cursor:pointer;" onclick="location.href='{% url 'mailing:mailinglist_list' %}'">
+            <div class="card-body">
+                <h1 class="mb-3">📧</h1>
+                <h5 class="card-title">Mailing Lists</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card text-center shadow-sm border-0 h-100 bg-success text-white" style="cursor:pointer;" onclick="location.href='{% url 'mailing:mailing_kanban' %}'">
+            <div class="card-body">
+                <h1 class="mb-3">🗂️</h1>
+                <h5 class="card-title">Mailing Kanban</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card text-center shadow-sm border-0 h-100 bg-danger text-white" style="cursor:pointer;">
+            <div class="card-body">
+                <h1 class="mb-3">🚪</h1>
+                <h5 class="card-title">Logout</h5>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from . import views
 app_name = 'mailing'
 
 urlpatterns = [
+    path('accounts/profile/', views.dashboard, name='dashboard'),
     # Contact
     path('contacts/', views.contact_list, name='contact_list'),
     path('contacts/create/', views.contact_create, name='contact_create'),
