@@ -92,16 +92,86 @@ def mailing_create(request):
         return redirect('mailing:mailing_list')
     return render(request, 'mailing/mailing_form.html', {'form': form})
 
+
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+
 @login_required
 def mailing_edit(request, pk):
     mailing = get_object_or_404(Mailing, pk=pk)
     form = MailingForm(request.POST or None, request.FILES or None, instance=mailing)
+
     if form.is_valid():
-        form.save()
-        for file in request.FILES.getlist('attachments'):
-            MailingAttachment.objects.create(mailing=mailing, file=file)
-        return redirect('mailing:mailing_list')
+        mailing = form.save(commit=False)
+
+        action = request.POST.get('action')
+
+        if action == 'save':
+            mailing.save()
+            for file in request.FILES.getlist('attachments'):
+                MailingAttachment.objects.create(mailing=mailing, file=file)
+            return redirect('mailing:mailing_list')
+
+        elif action == 'send':
+            # Update status to 'sending'
+            mailing.status = 'sending'
+            mailing.save()
+
+            # Attach new files if any
+            for file in request.FILES.getlist('attachments'):
+                MailingAttachment.objects.create(mailing=mailing, file=file)
+
+            # Get all recipients from all linked mailing lists
+            recipients = Contact.objects.filter(
+                mailing_lists__in=mailing.mailing_lists.all(),
+                opt_out=False
+            ).distinct()
+
+            # Load email template
+            email_body = render_to_string('mailing/emails/static_resume.html', {
+                'name': 'Candidate',
+                'subject': mailing.subject,
+                'website_link': 'https://yourwebsite.com'
+            })
+
+            # Send emails
+            for contact in recipients:
+                email = EmailMessage(
+                    subject=mailing.subject,
+                    body=email_body,
+                    from_email='your-email@example.com',
+                    to=[contact.email],
+                )
+                email.content_subtype = "html"
+
+                for attachment in mailing.attachments.all():
+                    email.attach(attachment.file.name, attachment.file.read(), attachment.file.file.content_type)
+
+                try:
+                    email.send()
+                    sent_status = True
+                except Exception as e:
+                    sent_status = False  # Log failure but continue loop
+
+                # Create log entry
+                MailingLog.objects.create(
+                    mailing=mailing,
+                    contact=contact,
+                    sent=sent_status,
+                    opened=False,
+                    clicked=False,
+                    replied=False
+                )
+
+            # Final save with status updated to 'sent'
+            mailing.status = 'sent'
+            mailing.save()
+
+            return redirect('mailing:mailing_list')
+
     return render(request, 'mailing/mailing_form.html', {'form': form, 'mailing': mailing})
+
+
 
 @login_required
 def mailing_delete(request, pk):
