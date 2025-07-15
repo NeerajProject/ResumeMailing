@@ -1,0 +1,20 @@
+{% extends 'mailing/base.html' %}
+{% block content %}
+<h2>Mailing Lists</h2>
+<form method="get" class="mb-3">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search..." class="form-control" />
+</form>
+<a href="{% url 'mailing:mailinglist_create' %}" class="btn btn-primary mb-3">Add Mailing List</a>
+<table class="table table-striped">
+    <tr><th>Name</th><th>Actions</th></tr>
+    {% for ml in lists %}
+    <tr>
+        <td>{{ ml.name }}</td>
+        <td>
+            <a href="{% url 'mailing:mailinglist_edit' ml.pk %}">Edit</a> |
+            <a href="{% url 'mailing:mailinglist_delete' ml.pk %}">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

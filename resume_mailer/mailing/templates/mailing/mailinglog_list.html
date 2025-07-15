@@ -1,0 +1,14 @@
+{% extends 'mailing/base.html' %}
+{% block content %}
+<h2>Mailing Logs</h2>
+<table class="table table-striped">
+    <tr><th>Mailing</th><th>Contact</th><th>Status</th></tr>
+    {% for log in logs %}
+    <tr>
+        <td>{{ log.mailing.subject }}</td>
+        <td>{{ log.contact.name }} ({{ log.contact.email }})</td>
+        <td>{{ log.status }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

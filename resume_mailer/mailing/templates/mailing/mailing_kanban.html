@@ -1,0 +1,16 @@
+{% extends 'mailing/base.html' %}
+{% block content %}
+<h2>Mailing Kanban</h2>
+<div class="row">
+    {% for mailing in mailings %}
+    <div class="col-md-4">
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <h5>{{ mailing.subject }}</h5>
+                <p>Status: {{ mailing.status }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

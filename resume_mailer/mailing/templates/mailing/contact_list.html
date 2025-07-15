@@ -1,0 +1,21 @@
+{% extends 'mailing/base.html' %}
+{% block content %}
+<h2>Contacts</h2>
+<form method="get" class="mb-3">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search..." class="form-control" />
+</form>
+<a href="{% url 'mailing:contact_create' %}" class="btn btn-primary mb-3">Add Contact</a>
+<table class="table table-striped">
+    <tr><th>Name</th><th>Email</th><th>Actions</th></tr>
+    {% for contact in contacts %}
+    <tr>
+        <td>{{ contact.name }}</td>
+        <td>{{ contact.email }}</td>
+        <td>
+            <a href="{% url 'mailing:contact_edit' contact.pk %}">Edit</a> |
+            <a href="{% url 'mailing:contact_delete' contact.pk %}">Delete</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
