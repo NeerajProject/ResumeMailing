@@ -1,58 +1,131 @@
-from django.shortcuts import render, redirect
-from django.core.mail import EmailMessage
-from .models import Mailing, MailingLog
-from .forms import MailingForm
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from .models import Contact, MailingList, Mailing, MailingAttachment, MailingLog
+from .forms import ContactForm, MailingListForm, MailingForm
 
-from django.shortcuts import render, redirect
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from .forms import MailingForm
-from .models import MailingLog
+# Contact CRUD
+@login_required
+def contact_list(request):
+    search = request.GET.get('q', '')
+    contacts = Contact.objects.filter(Q(name__icontains=search) | Q(email__icontains=search))
+    return render(request, 'mailing/contact_list.html', {'contacts': contacts, 'search': search})
 
-def create_mailing(request):
+@login_required
+def contact_create(request):
+    form = ContactForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect('mailing:contact_list')
+    return render(request, 'mailing/contact_form.html', {'form': form})
+
+@login_required
+def contact_edit(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
+    form = ContactForm(request.POST or None, instance=contact)
+    if form.is_valid():
+        form.save()
+        return redirect('mailing:contact_list')
+    return render(request, 'mailing/contact_form.html', {'form': form})
+
+@login_required
+def contact_delete(request, pk):
+    contact = get_object_or_404(Contact, pk=pk)
     if request.method == 'POST':
-        form = MailingForm(request.POST, request.FILES)
-        if form.is_valid():
-            mailing = form.save()
+        contact.delete()
+        return redirect('mailing:contact_list')
+    return render(request, 'mailing/contact_confirm_delete.html', {'contact': contact})
 
-            # Static subject and template
-            subject = "Resume Submission for Your Review"
-            html_content = render_to_string("mailing/emails/email_template.html")  # Fully static HTML
+# MailingList CRUD
+@login_required
+def mailinglist_list(request):
+    search = request.GET.get('q', '')
+    lists = MailingList.objects.filter(name__icontains=search)
+    return render(request, 'mailing/mailinglist_list.html', {'lists': lists, 'search': search})
 
-            recipients = mailing.mailing_list.contacts.all()
+@login_required
+def mailinglist_create(request):
+    form = MailingListForm(request.POST or None)
+    if form.is_valid():
+        form.save()
+        return redirect('mailing:mailinglist_list')
+    return render(request, 'mailing/mailinglist_form.html', {'form': form})
 
-            for contact in recipients:
-                email = EmailMessage(
-                    subject=subject,
-                    body=html_content,
-                    from_email=mailing.from_email,
-                    to=[contact.email],
-                )
-                email.content_subtype = "html"
+@login_required
+def mailinglist_edit(request, pk):
+    ml = get_object_or_404(MailingList, pk=pk)
+    form = MailingListForm(request.POST or None, instance=ml)
+    if form.is_valid():
+        form.save()
+        return redirect('mailing:mailinglist_list')
+    return render(request, 'mailing/mailinglist_form.html', {'form': form})
 
-                if mailing.attachment:
-                    email.attach(
-                        mailing.attachment.name,
-                        mailing.attachment.read(),
-                        mailing.attachment.file.content_type
-                    )
+@login_required
+def mailinglist_delete(request, pk):
+    ml = get_object_or_404(MailingList, pk=pk)
+    if request.method == 'POST':
+        ml.delete()
+        return redirect('mailing:mailinglist_list')
+    return render(request, 'mailing/mailinglist_confirm_delete.html', {'mailinglist': ml})
 
-                email.send()
+# Mailing CRUD + Attachments + Kanban
+@login_required
+def mailing_list(request):
+    search = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
 
-                MailingLog.objects.create(
-                    mailing=mailing,
-                    contact=contact,
-                    status='Sent'
-                )
+    mailings = Mailing.objects.all()
+    if search:
+        mailings = mailings.filter(Q(subject__icontains=search) | Q(body__icontains=search))
+    if status_filter:
+        mailings = mailings.filter(status=status_filter)
 
-            mailing.sent = True
-            mailing.save()
+    return render(request, 'mailing/mailing_list.html', {'mailings': mailings, 'search': search, 'status_filter': status_filter})
 
-            return redirect('mailing_success')
-    else:
-        form = MailingForm()
-    return render(request, 'mailing/create_mailing.html', {'form': form})
+@login_required
+def mailing_create(request):
+    form = MailingForm(request.POST or None, request.FILES or None)
+    if form.is_valid():
+        mailing = form.save()
+        for file in request.FILES.getlist('attachments'):
+            MailingAttachment.objects.create(mailing=mailing, file=file)
+        return redirect('mailing:mailing_list')
+    return render(request, 'mailing/mailing_form.html', {'form': form})
 
+@login_required
+def mailing_edit(request, pk):
+    mailing = get_object_or_404(Mailing, pk=pk)
+    form = MailingForm(request.POST or None, request.FILES or None, instance=mailing)
+    if form.is_valid():
+        form.save()
+        for file in request.FILES.getlist('attachments'):
+            MailingAttachment.objects.create(mailing=mailing, file=file)
+        return redirect('mailing:mailing_list')
+    return render(request, 'mailing/mailing_form.html', {'form': form, 'mailing': mailing})
 
-def mailing_success(request):
-    return render(request, 'mailing/success.html')
+@login_required
+def mailing_delete(request, pk):
+    mailing = get_object_or_404(Mailing, pk=pk)
+    if request.method == 'POST':
+        mailing.delete()
+        return redirect('mailing:mailing_list')
+    return render(request, 'mailing/mailing_confirm_delete.html', {'mailing': mailing})
+
+@login_required
+def mailing_kanban(request):
+    search = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+
+    mailings = Mailing.objects.all()
+    if search:
+        mailings = mailings.filter(subject__icontains=search)
+    if status_filter:
+        mailings = mailings.filter(status=status_filter)
+
+    return render(request, 'mailing/mailing_kanban.html', {'mailings': mailings, 'search': search, 'status_filter': status_filter})
+
+# Mailing Logs (Read-only)
+@login_required
+def mailinglog_list(request):
+    logs = MailingLog.objects.select_related('mailing', 'contact').all()
+    return render(request, 'mailing/mailinglog_list.html', {'logs': logs})

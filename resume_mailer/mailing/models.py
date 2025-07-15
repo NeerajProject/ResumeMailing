@@ -1,41 +1,53 @@
 from django.db import models
 
-class MailingList(models.Model):
-    name = models.CharField(max_length=150)
-
-    def __str__(self):
-        return self.name
-
 class Contact(models.Model):
-    mailing_list = models.ForeignKey(MailingList, on_delete=models.CASCADE, related_name="contacts")
-    name = models.CharField(max_length=100)
-    email = models.EmailField()
+    name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(unique=True)
+    company_name = models.CharField(max_length=255, blank=True)
+    opt_out = models.BooleanField(default=False)
+    subscription_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} ({self.email})"
+        return self.email
 
-class EmailTemplate(models.Model):
-    name = models.CharField(max_length=150)
-    subject = models.CharField(max_length=200)
-    html_content = models.TextField()
+class MailingList(models.Model):
+    name = models.CharField(max_length=255)
+    contacts = models.ManyToManyField(Contact, related_name='mailing_lists')
 
     def __str__(self):
         return self.name
 
 class Mailing(models.Model):
-    name = models.CharField(max_length=150)
-    mailing_list = models.ForeignKey(MailingList, on_delete=models.CASCADE)
-    template = models.ForeignKey(EmailTemplate, on_delete=models.SET_NULL, null=True)
-    from_email = models.EmailField()
-    attachment = models.FileField(upload_to='attachments/', null=True, blank=True)
-    sent = models.BooleanField(default=False)
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('in_queue', 'In Queue'),
+        ('sending', 'Sending'),
+        ('sent', 'Sent'),
+    )
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    mailing_lists = models.ManyToManyField(MailingList)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.name
+        return self.subject
+
+class MailingAttachment(models.Model):
+    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='mailing_attachments/')
+
+    def __str__(self):
+        return self.file.name
 
 class MailingLog(models.Model):
-    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE)
+    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='logs')
     contact = models.ForeignKey(Contact, on_delete=models.CASCADE)
-    status = models.CharField(max_length=50, default='Sent')
+    sent = models.BooleanField(default=False)
+    opened = models.BooleanField(default=False)
+    clicked = models.BooleanField(default=False)
+    replied = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.contact.email} - {self.mailing.subject}"
