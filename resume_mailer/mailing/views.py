@@ -143,9 +143,8 @@ def mailing_edit(request, pk):
                     to=[contact.email],
                 )
                 email.content_subtype = "html"
-
-                for attachment in mailing.attachments.all():
-                    email.attach(attachment.file.name, attachment.file.read(), attachment.file.file.content_type)
+                file_path='/home/user/Downloads/Odoo_Developer_LLM_Resume_Neeraj_2025.pdf.pdf'
+                email.attach_file(file_path)
 
                 try:
                     email.send()
